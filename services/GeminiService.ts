@@ -8,7 +8,28 @@ import { GoogleGenAI, Type } from "@google/genai";
 import type { Slider, SliderSuggestion, Modulation } from '../types';
 import { v4 as uuidv4 } from 'uuid';
 
-const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
+let aiInstance: GoogleGenAI | null = null;
+
+const getAiInstance = () => {
+    if (!aiInstance) {
+        const apiKey = process.env.API_KEY || process.env.GEMINI_API_KEY;
+        if (!apiKey) {
+             console.warn("API key is missing");
+             return null;
+        }
+        aiInstance = new GoogleGenAI({ apiKey });
+    }
+    return aiInstance;
+};
+
+const ai: any = new Proxy({}, {
+    get: (target, prop) => {
+        const instance = getAiInstance();
+        if (!instance) throw new Error("API key is required");
+        return (instance as any)[prop];
+    }
+});
+
 const model = 'gemini-2.5-pro';
 
 // A centralized, detailed system instruction for all code-generation prompts.
